@@ -1,52 +1,43 @@
-package com.example.tickets;
+import com.example.tickets.IncidentTicket;
+import com.example.tickets.TicketService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Service layer that creates tickets.
- *
- * CURRENT STATE (BROKEN ON PURPOSE):
- * - creates partially valid objects
- * - mutates after creation (bad for auditability)
- * - validation is scattered & incomplete
- *
- * TODO (student):
- * - After introducing immutable IncidentTicket + Builder, refactor this to stop mutating.
+ * Demo showing immutability in action.
  */
-public class TicketService {
+public class TryIt {
 
-    public IncidentTicket createTicket(String id, String reporterEmail, String title) {
-        // scattered validation (incomplete on purpose)
-        if (id == null || id.trim().isEmpty()) throw new IllegalArgumentException("id required");
-        if (reporterEmail == null || !reporterEmail.contains("@")) throw new IllegalArgumentException("email invalid");
-        if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("title required");
+    public static void main(String[] args) {
+        TicketService ticketManager = new TicketService();
 
-        IncidentTicket t = new IncidentTicket(id, reporterEmail, title);
+        // Create ticket
+        IncidentTicket baseTicket = ticketManager.createTicket(
+                "TCK-1001",
+                "reporter@example.com",
+                "Payment failing on checkout"
+        );
+        System.out.println("Created: " + baseTicket);
 
-        // BAD: mutating after creation
-        t.setPriority("MEDIUM");
-        t.setSource("CLI");
-        t.setCustomerVisible(false);
+        // "Update" returns NEW ticket - original unchanged
+        IncidentTicket delegated = ticketManager.assign(baseTicket, "agent@example.com");
+        IncidentTicket upgraded = ticketManager.escalateToCritical(delegated);
 
-        List<String> tags = new ArrayList<>();
-        tags.add("NEW");
-        t.setTags(tags);
+        System.out.println("\nAfter updates:");
+        System.out.println("  Original : " + baseTicket);
+        System.out.println("  Assigned : " + delegated);
+        System.out.println("  Escalated: " + upgraded);
 
-        return t;
-    }
-
-    public void escalateToCritical(IncidentTicket t) {
-        // BAD: mutating ticket after it has been "created"
-        t.setPriority("CRITICAL");
-        t.getTags().add("ESCALATED"); // list leak
-    }
-
-    public void assign(IncidentTicket t, String assigneeEmail) {
-        // scattered validation
-        if (assigneeEmail != null && !assigneeEmail.contains("@")) {
-            throw new IllegalArgumentException("assigneeEmail invalid");
+        // Try external tag mutation - will fail
+        List<String> labelsList = upgraded.getTags();
+        try {
+            labelsList.add("HACKED_FROM_OUTSIDE");
+            System.out.println("\nBUG: Mutation succeeded!");
+        } catch (UnsupportedOperationException e) {
+            System.out.println("\nExternal mutation blocked!");
         }
-        t.setAssigneeEmail(assigneeEmail);
+
+        // No setters exist - won't compile:
+        // baseTicket.setPriority("LOW");
     }
 }

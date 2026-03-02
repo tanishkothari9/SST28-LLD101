@@ -9,29 +9,29 @@ import java.io.*;
 public class SerializationCheck {
 
     public static void main(String[] args) throws Exception {
-        MetricsRegistry a = MetricsRegistry.getInstance();
-        a.setCount("REQUESTS_TOTAL", 42);
+        MetricsRegistry originalInstance = MetricsRegistry.getInstance();
+        originalInstance.setCount("REQUESTS_TOTAL", 42);
 
-        byte[] bytes = serialize(a);
-        MetricsRegistry b = deserialize(bytes);
+        byte[] serializedData = serialize(originalInstance);
+        MetricsRegistry restoredInstance = deserialize(serializedData);
 
-        System.out.println("A identity: " + System.identityHashCode(a));
-        System.out.println("B identity: " + System.identityHashCode(b));
-        System.out.println("Same object? " + (a == b));
-        System.out.println("B REQUESTS_TOTAL = " + b.getCount("REQUESTS_TOTAL"));
+        System.out.println("A identity: " + System.identityHashCode(originalInstance));
+        System.out.println("B identity: " + System.identityHashCode(restoredInstance));
+        System.out.println("Same object? " + (originalInstance == restoredInstance));
+        System.out.println("B REQUESTS_TOTAL = " + restoredInstance.getCount("REQUESTS_TOTAL"));
     }
 
-    private static byte[] serialize(MetricsRegistry r) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-            oos.writeObject(r);
+    private static byte[] serialize(MetricsRegistry registryRef) throws IOException {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        try (ObjectOutputStream objectWriter = new ObjectOutputStream(byteStream)) {
+            objectWriter.writeObject(registryRef);
         }
-        return baos.toByteArray();
+        return byteStream.toByteArray();
     }
 
-    private static MetricsRegistry deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
-            return (MetricsRegistry) ois.readObject();
+    private static MetricsRegistry deserialize(byte[] serializedData) throws IOException, ClassNotFoundException {
+        try (ObjectInputStream objectReader = new ObjectInputStream(new ByteArrayInputStream(serializedData))) {
+            return (MetricsRegistry) objectReader.readObject();
         }
     }
 }

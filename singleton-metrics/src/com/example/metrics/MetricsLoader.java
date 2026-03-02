@@ -6,34 +6,28 @@ import java.util.Properties;
 
 /**
  * Loads default metric keys from a properties file.
- *
- * CURRENT STATE (BROKEN ON PURPOSE):
- * - Uses 'new MetricsRegistry()' instead of the singleton.
- *
- * TODO (student):
- *  - Use MetricsRegistry.getInstance() and remove all direct instantiation.
  */
 public class MetricsLoader {
 
-    public MetricsRegistry loadFromFile(String path) throws IOException {
-        Properties props = new Properties();
-        try (FileInputStream fis = new FileInputStream(path)) {
-            props.load(fis);
+    public MetricsRegistry loadFromFile(String filePath) throws IOException {
+        Properties config = new Properties();
+        try (FileInputStream inputStream = new FileInputStream(filePath)) {
+            config.load(inputStream);
         }
 
-        // BROKEN: should not create a new instance
-        MetricsRegistry registry = new MetricsRegistry();
+        // Use singleton - not new instance
+        MetricsRegistry metricsInstance = MetricsRegistry.getInstance();
 
-        for (String key : props.stringPropertyNames()) {
-            String raw = props.getProperty(key, "0").trim();
-            long v;
+        for (String metricName : config.stringPropertyNames()) {
+            String rawValue = config.getProperty(metricName, "0").trim();
+            long parsedCount;
             try {
-                v = Long.parseLong(raw);
-            } catch (NumberFormatException e) {
-                v = 0L;
+                parsedCount = Long.parseLong(rawValue);
+            } catch (NumberFormatException exc) {
+                parsedCount = 0L;
             }
-            registry.setCount(key, v);
+            metricsInstance.setCount(metricName, parsedCount);
         }
-        return registry;
+        return metricsInstance;
     }
 }
